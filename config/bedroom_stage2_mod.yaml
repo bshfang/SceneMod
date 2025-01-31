@@ -1,0 +1,164 @@
+tag: "bedroom_mod_stage2"
+eval_freq: 5
+epochs: 3000
+batch_size: 128
+num_workers: 12
+load_model: ""
+
+data:
+    dataset_name: "3dfront_graph_mod_s2"
+    dataset_directory: "./3d_front_processed/bedrooms_objfeats_32_64"
+    
+    # split
+    train_file: ./3dfront_data/splits_mod_all/bedroom_train.json
+    val_file: ./3dfront_data/splits_mod_all/bedroom_val.json"
+    test_file: ./3dfront_data/splits_mod_all/bedroom_test.json
+
+    train_stats: "dataset_stats.txt"
+
+    max_node: 13
+    room_type: 'bedroom'
+    num_workers: 8
+
+    translation_dim: 3
+    distance_dim: 0  # the distance to four walls
+    size_dim: 3
+    rotation_dim: 2
+    cat_dim: 23 
+    objfeat_dim: 32 # 32  # the model feature, set as 0 in the first stage
+
+    # scene graph edge setting
+    extra_edge_attri: true  # whether use angle and distance in the edge attri
+    edge_cat_dim: 11
+    edge_attr_dim: 12
+
+    edge_attr_dim_dis: 3  # 3
+    edge_attr_dim_angle: 2  # 2
+    edge_attr_dim_angle_class: 4 # 4
+    edge_attr_dim_parallel: 3  # 3
+
+    scale_input_feat: true
+    scale_input_class: True  # recale the class to -1/1 (should always set as true)
+
+    use_mod_mask: true
+
+    load_floor_bound: true
+
+    load_prompt: true
+
+    # use the object feature from openshape3d
+    use_new_vis_objfeat: False
+    new_objfeat_path: ./data/3d_future/new_objfeat32.pkl
+
+model:
+    # diffusion setting
+    diffusion_noise_schedule: 'linear'
+    diffusion_steps: 50
+    normalize_factors: [2, 1, 1]
+    norm_biases: [0, 0, 0]
+
+    use_undirected_graph: false
+
+    # gnn setting
+    separate_encoder_node: true
+    separate_encoder_edge: true
+
+    separate_encoder_edge_attr: True
+
+    # new
+    use_no_edge_feat_source: true
+    use_no_edge_feat_target: false
+
+    input_dims:
+        X: 8  # trans + size + rot
+        E: 5
+        y: 1
+    output_dims:
+        X: 8
+        E: 5
+        y: 1
+    hidden_mlp_dims: 
+        X: 512 
+        E: 256
+        y: 128
+    hidden_dims: 
+        dx: 512
+        de: 256
+        dy: 256
+        n_head: 8
+        dim_ffX: 512
+        dim_ffE: 512
+        dim_ffy: 256
+
+    n_layers: 6
+
+    # feature dimension used for the model
+    feat_dims:
+        translation_dim: 3
+        size_dim: 3
+        rotation_dim: 2
+        cat_dim: 0 
+        objfeat_dim: 0
+
+        mod_mask_dim: 0
+
+        edge_cat_dim: 0
+        edge_attr_dim: 5 
+
+        edge_attr_dim_dis: 3
+        edge_attr_dim_angle: 2
+        edge_attr_dim_angle_class: 0 # 4
+        edge_attr_dim_parallel: 0  # 3
+        
+    use_node_mask: false  # in previous default, this is true
+    
+    use_cross_attention: True
+    cross_attention_dim: 768
+    
+    # all condition
+    instance_condition: true
+    instance_emb_dim: 128
+
+    floorplan_condition: true
+    floorplan_condition_emb_dim: 128
+
+    # source room condition (for stage two generation, the source room is the object sets)
+    source_room_condition_node_s2: True
+    source_room_condition_edge_s2: True
+    source_node_emb_dim: 256
+    source_edge_emb_dim: 256
+
+    source_room_condition_bbox_s1: true
+    source_node_emb_dim_bbox: 128
+
+    condition_emb_dim: 640  # instance_emb_dim + obj_num_emb_dim + ...
+
+    gnn_residual_feature: true  # always true
+
+    # loss
+    separate_loss: true
+
+    loss_use_mask: false  # deprecated
+    separate_loss_edge_attr: false  # useless, set as false
+
+    only_bbox_loss: true
+
+    loss_trans_weight: 1.0
+    loss_size_weight: 1.0
+    loss_rot_weight: 1.0
+    loss_class_weight: 1.0
+    loss_objfeat_weight: 1.0
+    loss_e_class_weight: 10.0
+    loss_e_attr_weight: 10.0
+
+    mod_mask_weight: 1.0
+
+
+optimizer:
+    core_method: Adamw
+    lr: 0.0002 
+    weight_decay: 0.001  # 1e-7
+    
+scheduler:
+    milestones: [500, 1000, 1500, 2000] 
+    gamma: 0.5
